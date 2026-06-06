@@ -78,7 +78,7 @@ The left column also shows a **3D PCA projection** of the current expression:
 - **Origin** — fixed at (0, 0, 0)
 - **After Compute** — the result vector and nearest-neighbor points are added
 
-The 3D chart updates as you add terms, before you compute. After Compute it switches to showing the result vector and neighbors instead.
+The 3D chart updates as you add terms, before you **Compute**. After **Compute** it switches to showing the result vector and neighbors.
 
 > This is a PCA projection for intuition. Distances in the 3D plot do not equal distances in the original 100-dimensional space.
 
