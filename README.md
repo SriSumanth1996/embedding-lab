@@ -1,24 +1,12 @@
 # 🧪 Embedding Lab
 
-An interactive Streamlit app for exploring **word-vector arithmetic** using GloVe embeddings.
+An interactive Streamlit app for exploring **word-vector arithmetic** with GloVe embeddings.
 
-Instead of treating embeddings as abstract math, Embedding Lab lets you build additive/subtractive expressions over real word vectors, inspect semantic neighbors by cosine similarity, and watch meaning move through a 3D PCA-projected space — all in a live UI.
-
----
-
-## What it does
-
-Word embeddings encode semantic relationships as directions in high-dimensional space. Embedding Lab makes that tangible:
-
-- Type a word, add or subtract it from an expression
-- Hit **Compute** to evaluate the vector sum and find the nearest vocabulary words
-- Watch the 3D projection update in real time as you build your expression
-- Save computed vectors and reuse them as inputs to later expressions
-- Browse session history to restore or chain earlier results
+Type words, add or subtract them, hit **Compute**, and see which vocabulary words land closest to the resulting vector — all visualized live in a 3D projection.
 
 ---
 
-## Quick start
+## Run locally
 
 **Requirements:** Python 3.11 recommended
 
@@ -27,55 +15,80 @@ pip install streamlit gensim==4.3.3 "numpy<2.0" "scipy<1.14" plotly scikit-learn
 ```
 
 ```bash
-streamlit run embeddings_intuition.py
+streamlit run app.py
 ```
 
-1. Open the local URL printed in the terminal.
-2. Click **Load Model** — the app downloads **GloVe-Wiki-Gigaword-100** (~134 MB) once and caches it locally.
-3. Build an expression and click **Compute**.
+Open the local URL printed in the terminal, then click **Load Model**.
+
+On first run, the app downloads **GloVe-Wiki-Gigaword-100** (~134 MB) via Gensim and caches it locally. Subsequent runs load straight from the cache.
 
 ---
 
-## How to use it
+## How it works — step by step
 
-### 1 — Build an expression
+The app header shows a three-step flow: **Build expression → Compute → Discover.**
 
-Enter any vocabulary word and click **Add** (green) or **Subtract** (red). Each term appears as a removable chip in the expression panel. You can also add a previously saved result by typing its reference, e.g. `@v1`.
+### Step 1 — Build Expression
 
-### 2 — Compute
+Use the **Term** text field to type a vocabulary word. Or pick a previously saved result from the **Saved Vectors** dropdown (these appear after you save a Compute result).
 
-Click **Compute** to evaluate the expression vector and retrieve the top 4 nearest neighbors by cosine similarity. The result formula is displayed in the Closest Words panel.
+Four buttons act on the current expression:
 
-### 3 — Explore neighbors
-
-Each neighbor card shows the word, its similarity score, and a proportional bar. From any neighbor you can:
-
-| Action | What it does |
+| Button | What it does |
 |---|---|
-| **Add** | Appends the word to the current expression's add list |
-| **Subtract** | Appends the word to the current expression's subtract list |
-| **Start Fresh** | Clears the expression and starts a new one with that word as the base |
+| **＋ Add** | Appends the typed word (or selected saved vector) to the add list |
+| **− Sub** | Appends it to the subtract list |
+| **Clear** | Resets the entire expression and clears the last result |
+| **Compute** | Evaluates the expression and finds the top 4 nearest neighbors |
 
-### 4 — Save a result
+Each term appears as a removable chip below the expression formula — green chips for added terms, red chips for subtracted terms. Click a chip to remove that term.
 
-Expand **Save this result** below the neighbor cards, optionally rename the vector, and click **Save**. The vector is stored as `@v1`, `@v2`, etc. and becomes available for use in any future expression.
+> Numbers are not accepted as terms. If a word is not in the GloVe vocabulary, a warning is shown and the term is not added.
 
-### 5 — Visualize in 3D
+### Step 2 — Compute
 
-The **Vector Space Visualization** panel renders a Plotly 3D scatter/arrow chart:
+Click **Compute**. The app sums the add vectors, subtracts the subtract vectors, and queries GloVe for the 4 nearest vocabulary words by cosine similarity. Input terms are automatically excluded from results.
 
-- **Green arrows** — added terms
-- **Red arrows** — subtracted terms
-- **Origin** — anchored at (0, 0, 0)
-- **Result + neighbors** — shown after Compute
+The expression is written in the form:
 
-Vectors are projected to three dimensions with PCA. This is an intuition aid; spatial distances in the plot do not correspond to distances in the original 100-dimensional space.
+```
+(paris - france) + italy
+```
 
-### 6 — Experiment History
+### Step 3 — Discover
 
-All past Compute calls are logged. For each entry:
+The **Closest Words** panel (right column) shows the top 4 neighbors ranked by cosine similarity score, with a proportional bar for each. Under every neighbor are three buttons:
 
-| Button | Effect |
+| Button | What it does |
+|---|---|
+| **Add** | Appends that neighbor to the current expression's add list |
+| **Subtract** | Appends it to the subtract list |
+| **Start Fresh** | Clears the expression and begins a new one with that word as the sole base term |
+
+Expand **Save this result** to give the computed vector a name and save it. It will appear in the **Saved Vectors** dropdown as `@v1`, `@v2`, etc. and can be reused in any later expression.
+
+---
+
+## Vector Space Visualization
+
+The left column also shows a **3D PCA projection** of the current expression:
+
+- **Green arrows** — cumulative position after each added term
+- **Red arrows** — cumulative position after each subtracted term
+- **Origin** — fixed at (0, 0, 0)
+- **After Compute** — the result vector and nearest-neighbor points are added
+
+The 3D chart updates as you add terms, before you compute. After Compute it switches to showing the result vector and neighbors instead.
+
+> This is a PCA projection for intuition. Distances in the 3D plot do not equal distances in the original 100-dimensional space.
+
+---
+
+## Experiment History
+
+Every Compute call is recorded in the **Experiment History** expander at the bottom. Each entry shows the expression and its top neighbors. Four buttons are available per entry:
+
+| Button | What it does |
 |---|---|
 | **Restore** | Reloads the expression and result exactly as they were |
 | **Add** | Adds the saved result vector to the current expression |
@@ -84,15 +97,15 @@ All past Compute calls are logged. For each entry:
 
 ---
 
-## Example expressions
+## Example expressions to try
 
-| Concept | Add | Subtract | Classic framing |
+| Idea | Add | Subtract | Equivalent to |
 |---|---|---|---|
 | Country analogy | `paris`, `italy` | `france` | `paris − france + italy` |
 | Historical analogy | `gandhi`, `germany` | `india` | `gandhi − india + germany` |
 | Product analogy | `microsoft`, `iphone` | `apple` | `microsoft − apple + iphone` |
 | Environment contrast | `arctic`, `sand` | `desert` | `arctic − desert + sand` |
-| Gender analogy | `king`, `woman` | `man` | `king − man + woman` |
+| Classic gender demo | `king`, `woman` | `man` | `king − man + woman` |
 
 Results depend on the GloVe training corpus. Some words may not be in the vocabulary.
 
@@ -100,31 +113,23 @@ Results depend on the GloVe training corpus. Some words may not be in the vocabu
 
 ## Technical details
 
-| Component | Detail |
+| Item | Value |
 |---|---|
-| **Model** | `glove-wiki-gigaword-100` via Gensim Downloader |
-| **Dimensions** | 100 |
-| **Vocabulary** | ~400k tokens |
-| **Similarity** | Cosine similarity (`KeyedVectors.similar_by_vector`) |
-| **Visualization** | PCA → 3 components, Plotly `Scatter3d` |
-| **Top neighbors** | 4 (configurable via `TOP_NEIGHBORS` constant) |
+| Model | `glove-wiki-gigaword-100` |
+| Dimensions | 100 |
+| Vocabulary | ~400 k tokens |
+| Similarity metric | Cosine similarity (`KeyedVectors.similar_by_vector`) |
+| Top neighbors shown | 4 (`TOP_NEIGHBORS` constant) |
+| Visualization | PCA → 3 components, Plotly `Scatter3d` |
+| Saved vectors | Session-only (`st.session_state`); not written to disk |
 
 ---
 
 ## Stack
 
-- [Streamlit](https://streamlit.io) — UI framework
+- [Streamlit](https://streamlit.io) — UI
 - [Gensim](https://radimrehurek.com/gensim/) — model loading and similarity search
 - [GloVe](https://nlp.stanford.edu/projects/glove/) — pre-trained word vectors
-- [Plotly](https://plotly.com) — interactive 3D visualization
+- [Plotly](https://plotly.com) — 3D visualization
 - [scikit-learn](https://scikit-learn.org) — PCA dimensionality reduction
 - [NumPy](https://numpy.org) — vector arithmetic
-
----
-
-## Notes
-
-- Only single-word tokens present in the GloVe vocabulary are accepted; numbers and phrases will not resolve.
-- Nearest-neighbor search excludes the input terms themselves from results.
-- The PCA projection is recomputed each time the expression changes, so axis scales shift as terms are added.
-- Saved vectors (`@v1`, `@v2`, …) persist only for the current browser session; they are not written to disk.
