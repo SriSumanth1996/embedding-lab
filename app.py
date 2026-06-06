@@ -129,18 +129,19 @@ div[data-testid="stTextInput"] > div:focus-within {
     font-weight: 600 !important;
 }
 
-/* Saved Vectors — match Term input text and caret */
-.st-key-saved_pick_main div[data-testid="stSelectbox"] > div > div,
-.st-key-saved_pick_main div[data-testid="stSelectbox"] input,
-.st-key-saved_pick_main div[data-testid="stSelectbox"] [data-baseweb="select"] > div {
+/* Saved Vectors selectbox — visible @ ref while typing and after selection */
+.st-key-saved_pick_main div[data-testid="stSelectbox"] [data-baseweb="select"] input {
+    caret-color: #ffffff !important;
+    caret-width: thick !important;
+    font-weight: 600 !important;
+    color: #e1e2e8 !important;
+    -webkit-text-fill-color: #e1e2e8 !important;
+    opacity: 1 !important;
+}
+.st-key-saved_pick_main div[data-testid="stSelectbox"] [class*="singleValue"] {
     font-weight: 600 !important;
     color: #e1e2e8 !important;
 }
-.st-key-saved_pick_main div[data-testid="stSelectbox"] input {
-    caret-color: #ffffff !important;
-    caret-width: thick !important;
-}
-.st-key-saved_pick_main div[data-testid="stSelectbox"] > div > div:focus,
 .st-key-saved_pick_main div[data-testid="stSelectbox"] > div:focus-within > div {
     border-color: #8b8fa3 !important;
     box-shadow: 0 0 0 1px #8b8fa3 !important;
@@ -1245,16 +1246,19 @@ with col_left:
         word_input = st.text_input("Term", placeholder="e.g. king", key="word_input_main")
         word = word_input.strip().lower()
 
+        picked_ref = None
         if saved:
-            saved_options = ["— reuse a past result —"] + [
+            saved_options = [
                 f"@{vid} ({meta['label'][:40]})" for vid, meta in saved.items()
             ]
-            picked_saved = st.selectbox("Saved Vectors", saved_options, key="saved_pick_main")
-            picked_ref = None
-            if picked_saved != saved_options[0]:
-                picked_ref = picked_saved.split()[0]
-        else:
-            picked_ref = None
+            picked_saved = st.selectbox(
+                "Saved Vectors",
+                saved_options,
+                index=None,
+                placeholder="— reuse a past result —",
+                key="saved_pick_main",
+            )
+            picked_ref = picked_saved.split()[0] if picked_saved else None
 
         with st.container(key="expr_btn_row"):
             b1, b2, b3, b4 = st.columns(4)
