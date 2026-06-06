@@ -29,8 +29,8 @@ The goal is to help new learners move from â€œembeddings are mysterious numbersâ
 2. Click **Load Model**.
 3. Try expressions such as:
    - `gandhi - india + germany`
-   - `paris - france + italy`
-   - `doctor - hospital + school`
+   - `microsoft - apple + iphone`
+   - `arctic - desert + sand`
 
 ## Built with
 
