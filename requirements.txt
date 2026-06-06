@@ -1,5 +1,6 @@
 streamlit
-gensim
-numpy
+gensim==4.3.3
+numpy<2.0
+scipy<1.14
 plotly
 scikit-learn
