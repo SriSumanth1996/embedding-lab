@@ -1,6 +1,6 @@
 # 🧪 Embedding Lab
 
-Embedding Lab makes one of the most important ideas in NLP and Generative AI — **word embeddings** — immediately tangible.
+**Embedding Lab** makes one of the most important ideas in NLP and Generative AI — **word embeddings** — immediately tangible.
 
 Whether you are a student encountering the theory for the first time, an instructor looking for a live classroom demo, or a practitioner trying to deepen your intuition, this lab gives abstract vector math a concrete face. You can build expressions, inspect nearest semantic neighbors, and watch simplified 3D geometry update as meaning moves through vector space.
 
