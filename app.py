@@ -129,6 +129,23 @@ div[data-testid="stTextInput"] > div:focus-within {
     font-weight: 600 !important;
 }
 
+/* Saved Vectors — match Term input text and caret */
+.st-key-saved_pick_main div[data-testid="stSelectbox"] > div > div,
+.st-key-saved_pick_main div[data-testid="stSelectbox"] input,
+.st-key-saved_pick_main div[data-testid="stSelectbox"] [data-baseweb="select"] > div {
+    font-weight: 600 !important;
+    color: #e1e2e8 !important;
+}
+.st-key-saved_pick_main div[data-testid="stSelectbox"] input {
+    caret-color: #ffffff !important;
+    caret-width: thick !important;
+}
+.st-key-saved_pick_main div[data-testid="stSelectbox"] > div > div:focus,
+.st-key-saved_pick_main div[data-testid="stSelectbox"] > div:focus-within > div {
+    border-color: #8b8fa3 !important;
+    box-shadow: 0 0 0 1px #8b8fa3 !important;
+}
+
 /* Closest Words inputs */
 .st-key-closest_words_container div[data-testid="stTextInput"] input {
     background-color: #141008 !important;
