@@ -1,8 +1,12 @@
 # 🧪 Embedding Lab
 
-An interactive Streamlit app for exploring **word-vector arithmetic** with GloVe embeddings.
+Embedding Lab makes one of the most important ideas in NLP and Generative AI — **word embeddings** — immediately tangible.
 
-Type words, add or subtract them, hit **Compute**, and see which vocabulary words land closest to the resulting vector — all visualized live in a 3D projection.
+Whether you are a student encountering the theory for the first time, an instructor looking for a live classroom demo, or a practitioner trying to deepen your intuition, this lab gives abstract vector math a concrete face. You can build expressions, inspect nearest semantic neighbors, and watch simplified 3D geometry update as meaning moves through vector space.
+
+The core insight is simple: **embeddings represent words as positions and directions in a vector space.**
+
+Because related words often occupy related regions and directions, we can explore meaning through vector arithmetic — adding, subtracting, comparing, and visualizing words as movements in semantic space.
 
 ---
 
@@ -78,7 +82,7 @@ The left column also shows a **3D PCA projection** of the current expression:
 - **Origin** — fixed at (0, 0, 0)
 - **After Compute** — the result vector and nearest-neighbor points are added
 
-The 3D chart updates as you add terms, before you **Compute**. After **Compute** it switches to showing the result vector and neighbors.
+The 3D chart updates as you add terms, before you compute. After Compute it switches to showing the result vector and neighbors instead.
 
 > This is a PCA projection for intuition. Distances in the 3D plot do not equal distances in the original 100-dimensional space.
 
