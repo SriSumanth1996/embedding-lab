@@ -1,12 +1,15 @@
 """
-╔══════════════════════════════════════════════════════════════╗
-║          EMBEDDING LAB  ·  NOTEBOOK EXPLORER                 ║
-║          Build expressions  ·  Discover neighbors  ·  Chain  ║
-║          GloVe-Wiki-Gigaword-100  ·  Cosine Similarity       ║
-╚══════════════════════════════════════════════════════════════╝
+Embedding Lab — interactive exploration of word-vector arithmetic.
+
+Streamlit application that uses GloVe-Wiki-Gigaword-100 embeddings and
+cosine similarity to build additive/subtractive expressions, find nearest
+neighbors, and visualize vectors in a 3D PCA projection.
+
+Run:
+    streamlit run embeddings_intuition.py
 
 Dependencies:
-    pip install streamlit gensim numpy plotly scikit-learn
+    streamlit, gensim, numpy, plotly, scikit-learn
 """
 
 import numpy as np
@@ -14,7 +17,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from sklearn.decomposition import PCA
 
-# ─── PAGE CONFIG ───────────────────────────────────────────────
+# ─── Page config ───────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Embedding Lab",
     page_icon="🧪",
@@ -22,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ─── CSS ───────────────────────────────────────────────────────
+# ─── Styles ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -37,7 +40,7 @@ html, body, [class*="css"] {
 }
 .block-container {
     padding-top: 2rem !important;
-    max-width: 1000px; /* narrowed slightly for elegance */
+    max-width: 1000px;
     margin: auto;
     padding-left: 1.5rem !important;
     padding-right: 1.5rem !important;
@@ -46,13 +49,13 @@ html, body, [class*="css"] {
 header[data-testid="stHeader"]  { display: none !important; }
 #MainMenu, footer, [data-testid="stToolbar"], [data-testid="stDecoration"] { display: none !important; }
 
-/* Custom containers — shared shape */
+/* Containers */
 div[data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 12px !important;
     padding: 1.5rem !important;
 }
 
-/* Build Expression — light blue background */
+/* Build Expression */
 .st-key-build_expr_container > div[data-testid="stVerticalBlockBorderWrapper"],
 .stVerticalBlock.st-key-build_expr_container,
 div[data-testid="stVerticalBlock"].st-key-build_expr_container {
@@ -62,7 +65,7 @@ div[data-testid="stVerticalBlock"].st-key-build_expr_container {
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55), 0 2px 10px rgba(96, 165, 250, 0.15) !important;
 }
 
-/* Closest Words — amber/warm brown background */
+/* Closest Words */
 .st-key-closest_words_container > div[data-testid="stVerticalBlockBorderWrapper"],
 .stVerticalBlock.st-key-closest_words_container,
 div[data-testid="stVerticalBlock"].st-key-closest_words_container {
@@ -72,7 +75,7 @@ div[data-testid="stVerticalBlock"].st-key-closest_words_container {
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55), 0 2px 10px rgba(251, 191, 36, 0.15) !important;
 }
 
-/* 3D Visualization — dark blue background */
+/* 3D Visualization */
 .st-key-viz_3d_container > div[data-testid="stVerticalBlockBorderWrapper"],
 .stVerticalBlock.st-key-viz_3d_container,
 div[data-testid="stVerticalBlock"].st-key-viz_3d_container {
@@ -82,7 +85,7 @@ div[data-testid="stVerticalBlock"].st-key-viz_3d_container {
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55), 0 2px 10px rgba(96, 165, 250, 0.15) !important;
 }
 
-/* Inputs and Selectboxes — shared styles */
+/* Inputs and selectboxes */
 div[data-testid="stTextInput"] input,
 div[data-testid="stSelectbox"] > div > div {
     color: #e1e2e8 !important;
@@ -98,7 +101,7 @@ div[data-testid="stTextInput"] input:focus-visible,
 div[data-testid="stTextInput"] input:active {
     outline: none !important;
 }
-/* Remove any red/default browser outlines */
+/* Input outlines */
 div[data-testid="stTextInput"] > div {
     border-color: transparent !important;
 }
@@ -107,7 +110,7 @@ div[data-testid="stTextInput"] > div:focus-within {
     box-shadow: none !important;
 }
 
-/* Inputs — Build Expression (neutral dark) */
+/* Build Expression inputs */
 .st-key-build_expr_container div[data-testid="stTextInput"] input,
 .st-key-build_expr_container div[data-testid="stSelectbox"] > div > div {
     background-color: #1a1b26 !important;
@@ -119,23 +122,30 @@ div[data-testid="stTextInput"] > div:focus-within {
     outline: none !important;
 }
 
-/* Inputs — Closest Words (amber tint) */
+/* Term input */
+.st-key-word_input_main div[data-testid="stTextInput"] input {
+    caret-color: #ffffff !important;
+    caret-width: thick !important;
+    font-weight: 600 !important;
+}
+
+/* Closest Words inputs */
 .st-key-closest_words_container div[data-testid="stTextInput"] input {
     background-color: #141008 !important;
     border: 1px solid #78552b !important;
 }
 
-/* Input focus — Build Expression (neutral) */
+/* Build Expression input focus */
 .st-key-build_expr_container div[data-testid="stTextInput"] input:focus {
     border-color: #8b8fa3 !important;
     box-shadow: 0 0 0 1px #8b8fa3 !important;
 }
-/* Input focus — Closest Words (amber) */
+/* Closest Words input focus */
 .st-key-closest_words_container div[data-testid="stTextInput"] input:focus {
     border-color: #fbbf24 !important;
     box-shadow: 0 0 0 1px #fbbf24 !important;
 }
-/* Input focus — default fallback */
+/* Input focus fallback */
 div[data-testid="stTextInput"] input:focus {
     border-color: #818cf8 !important;
     box-shadow: 0 0 0 1px #818cf8 !important;
@@ -146,7 +156,7 @@ div[data-testid="stTextInput"] label, div[data-testid="stSelectbox"] label {
     color: #8b8fa3 !important;
 }
 
-/* Buttons — shared styles */
+/* Buttons */
 div[data-testid="stButton"] > button {
     font-family: 'Inter', sans-serif !important;
     font-weight: 500 !important;
@@ -159,7 +169,7 @@ div[data-testid="stButton"] > button {
     width: 100%;
 }
 
-/* Buttons — Build Expression (teal tint) */
+/* Build Expression buttons */
 .st-key-build_expr_container div[data-testid="stButton"] > button {
     border: 1px solid #166552 !important;
 }
@@ -168,7 +178,7 @@ div[data-testid="stButton"] > button {
     background-color: #0d2a22 !important;
 }
 
-/* Buttons — Closest Words (amber tint) */
+/* Closest Words buttons */
 .st-key-closest_words_container div[data-testid="stButton"] > button {
     border: 1px solid #78552b !important;
 }
@@ -176,7 +186,7 @@ div[data-testid="stButton"] > button {
     border-color: #a0723a !important;
     background-color: #221c0f !important;
 }
-/* Primary button — Build Expression (teal) */
+/* Build Expression primary button */
 .st-key-build_expr_container div[data-testid="stButton"] > button[kind="primary"] {
     background-color: #10b981 !important;
     color: #ffffff !important;
@@ -186,7 +196,7 @@ div[data-testid="stButton"] > button {
 .st-key-build_expr_container div[data-testid="stButton"] > button[kind="primary"]:hover {
     background-color: #059669 !important;
 }
-/* Primary button — default fallback */
+/* Primary button fallback */
 div[data-testid="stButton"] > button[kind="primary"] {
     background-color: #818cf8 !important;
     color: #ffffff !important;
@@ -202,8 +212,7 @@ div[data-testid="stButton"] > button div {
     color: inherit !important;
 }
 
-/* Specific buttons by context */
-/* Add button — teal green with black text */
+/* Add button */
 .st-key-add_word div[data-testid="stButton"] button {
     background-color: #34d399 !important;
     color: #000000 !important;
@@ -219,7 +228,7 @@ div[data-testid="stButton"] > button div {
     color: #000000 !important;
 }
 
-/* Sub button — light red with black text */
+/* Sub button */
 .st-key-sub_word div[data-testid="stButton"] button {
     background-color: #f87171 !important;
     color: #000000 !important;
@@ -235,7 +244,7 @@ div[data-testid="stButton"] > button div {
     color: #000000 !important;
 }
 
-/* Clear button — orange with black text */
+/* Clear button */
 .st-key-clear_expr div[data-testid="stButton"] button {
     background-color: #fb923c !important;
     color: #000000 !important;
@@ -281,11 +290,11 @@ div[data-testid="stButton"] > button div {
     border-color: rgba(252, 165, 165, 0.5) !important;
 }
 
-/* Loading Spinners / Progress */
+/* Progress */
 .stSpinner > div > div { border-top-color: #10b981 !important; }
 .stProgress > div > div > div > div { background-color: #10b981 !important; }
 
-/* Custom Typography Classes */
+/* Typography */
 .title-main {
     font-family: 'Inter', sans-serif;
     font-size: 32px;
@@ -308,11 +317,11 @@ div[data-testid="stButton"] > button div {
     margin: 0 0 4px 0;
     color: #e1e2e8;
 }
-/* Build Expression section title — teal accent */
+/* Build Expression title */
 .st-key-build_expr_container .section-title {
     color: #34d399;
 }
-/* Closest Words section title — amber accent */
+/* Closest Words title */
 .st-key-closest_words_container .section-title {
     color: #fbbf24;
 }
@@ -323,7 +332,7 @@ div[data-testid="stButton"] > button div {
     line-height: 1.5;
 }
 
-/* Expressions — Build Expression container (neutral) */
+/* Expression box */
 .expr-box {
     background-color: #1a1b26;
     border: 1px solid #3a3d4e;
@@ -332,7 +341,7 @@ div[data-testid="stButton"] > button div {
     margin: 12px 0;
 }
 
-/* Expressions — Closest Words container (amber tint) */
+/* Closest Words expression box */
 .st-key-closest_words_container .expr-box {
     background-color: #141008;
     border: 1px solid #78552b;
@@ -484,7 +493,16 @@ div[data-testid="stButton"] > button div {
     margin-top: 4px;
 }
 
-/* Hide default expander styling */
+/* History buttons */
+.st-key-experiment_history div[data-testid="stButton"] > button {
+    border: 2px solid #8b8fa3 !important;
+}
+.st-key-experiment_history div[data-testid="stButton"] > button:hover {
+    border-color: #e1e2e8 !important;
+    background-color: #1a1b26 !important;
+}
+
+/* Expander */
 .streamlit-expanderHeader,
 div[data-testid="stExpander"] details summary,
 div[data-testid="stExpander"] details summary p {
@@ -512,14 +530,13 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] {
 
 </style>
 <script>
-    // Disable browser autocomplete on all text inputs
+    // Disable autocomplete on text inputs across initial load and rerenders.
     document.addEventListener('DOMContentLoaded', function() {
         const inputs = document.querySelectorAll('input[type="text"]');
         inputs.forEach(input => {
             input.setAttribute('autocomplete', 'off');
         });
     });
-    // Also run on Streamlit reruns
     const observer = new MutationObserver(function(mutations) {
         const inputs = document.querySelectorAll('input[type="text"]');
         inputs.forEach(input => {
@@ -530,17 +547,20 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] {
 </script>
 """, unsafe_allow_html=True)
 
+# ─── Constants ─────────────────────────────────────────────────────────────
 TOP_NEIGHBORS = 4
 
-# ─── LOAD MODEL ────────────────────────────────────────────────
+# ─── Model loading ─────────────────────────────────────────────────────────
 MODEL_NAME = "glove-wiki-gigaword-100"
 
 def is_model_downloaded():
+    """Return True if the GloVe model is present in the gensim data directory."""
     import os
     from gensim import downloader as gd
     return os.path.exists(os.path.join(gd.BASE_DIR, MODEL_NAME))
 
 def download_model_with_progress(progress_bar, status_label):
+    """Download the embedding model and stream progress to Streamlit widgets."""
     import gensim.downloader as gd
 
     class _StreamlitDownloadProgress:
@@ -566,6 +586,7 @@ def download_model_with_progress(progress_bar, status_label):
     progress_bar.progress(1.0)
 
 def load_vectors_with_progress(load_bar, status_label):
+    """Load word vectors from disk into a gensim KeyedVectors model."""
     import os
     from gensim import downloader as gd
     from gensim import utils
@@ -598,21 +619,25 @@ def load_vectors_with_progress(load_bar, status_label):
     return kv
 
 def load_model_with_progress(download_bar, load_bar, status_label, show_download):
+    """Download the model when required, then load vectors into memory."""
     if show_download:
         download_model_with_progress(download_bar, status_label)
     return load_vectors_with_progress(load_bar, status_label)
 
-# ─── MATH HELPERS ──────────────────────────────────────────────
+# ─── Expression helpers ─────────────────────────────────────────────────────
 def is_saved_ref(term):
+    """Return True if term is a saved-vector reference (e.g. '@v1')."""
     return isinstance(term, str) and term.startswith("@")
 
 def term_label(term, saved_vectors):
+    """Return the display label for a vocabulary word or saved-vector reference."""
     if is_saved_ref(term):
         vid = term[1:]
         return saved_vectors.get(vid, {}).get("label", term)
     return term
 
 def format_expression(add_terms, sub_terms, saved_vectors):
+    """Format add/subtract terms as a readable expression string."""
     if not add_terms and not sub_terms:
         return "∅"
 
@@ -622,7 +647,7 @@ def format_expression(add_terms, sub_terms, saved_vectors):
     if not add_terms:
         return " ".join(f"- {term_label(t, saved_vectors)}" for t in sub_terms)
 
-    # (first_add - sub1 - sub2 ...) + rest_adds
+    # Group as (first_add - sub_terms) + remaining_add_terms.
     first_add = term_label(add_terms[0], saved_vectors)
     sub_part = " - ".join(term_label(t, saved_vectors) for t in sub_terms)
     inner = f"({first_add} - {sub_part})"
@@ -632,6 +657,7 @@ def format_expression(add_terms, sub_terms, saved_vectors):
     return f"{inner} + {rest}"
 
 def resolve_term(term, model, saved_vectors):
+    """Resolve a term to its embedding vector, or return an error indicator."""
     if is_saved_ref(term):
         vid = term[1:]
         if vid not in saved_vectors:
@@ -642,6 +668,7 @@ def resolve_term(term, model, saved_vectors):
     return model[term].copy(), None
 
 def vector_from_expression(add_terms, sub_terms, model, saved_vectors):
+    """Compute the vector for an add/subtract expression."""
     if not add_terms and not sub_terms:
         return None, ["expression is empty"]
     vec = np.zeros(model.vector_size)
@@ -663,6 +690,7 @@ def vector_from_expression(add_terms, sub_terms, model, saved_vectors):
     return vec, []
 
 def nearest_words_for_vec(vec, model, exclude_words=None, topn=TOP_NEIGHBORS):
+    """Return the top cosine-similar vocabulary words for a vector."""
     buffer = topn + len(exclude_words or []) + 20
     candidates = model.similar_by_vector(vec, topn=buffer)
     if exclude_words:
@@ -670,29 +698,115 @@ def nearest_words_for_vec(vec, model, exclude_words=None, topn=TOP_NEIGHBORS):
         candidates = [(w, s) for w, s in candidates if w not in exclude_set]
     return candidates[:topn]
 
-# ─── 3D VISUALIZATION ───────────────────────────────────────────
+# ─── 3D visualization ──────────────────────────────────────────────────────
+def _grid_tick_step(span, target_count=6):
+    """Choose a readable tick interval for a scene axis span."""
+    if span <= 0:
+        return 1.0
+    rough = span / target_count
+    exponent = 10 ** np.floor(np.log10(rough))
+    for factor in (1, 2, 5, 10):
+        step = factor * exponent
+        if step >= rough * 0.5:
+            return float(step)
+    return float(10 * exponent)
+
+
+def _grid_ticks(lo, hi, step):
+    """Return tick positions between lo and hi at the given step size."""
+    start = np.ceil(lo / step) * step
+    return [float(t) for t in np.arange(start, hi + step * 0.5, step) if lo - 1e-9 <= t <= hi + 1e-9]
+
+
+def _scene_grid_bounds(coords_3d, padding=0.15):
+    """Return padded lower and upper bounds for the 3D scene axes."""
+    mins = coords_3d.min(axis=0)
+    maxs = coords_3d.max(axis=0)
+    spans = np.maximum(maxs - mins, 1e-6)
+    pad = spans * padding
+    return mins - pad, maxs + pad
+
+
+def _add_scene_box_grid(fig, lo, hi, color='#7a8299', width=1.2, divisions=6):
+    """
+    Draw crossed grid lines on the bottom, back, and side planes of the scene box.
+
+    Plotly's built-in 3D grid only crosses on one plane; custom line traces
+    provide a consistent grid on all three visible faces.
+    """
+    x0, y0, z0 = lo
+    x1, y1, z1 = hi
+
+    x_ticks = _grid_ticks(x0, x1, _grid_tick_step(x1 - x0, divisions))
+    y_ticks = _grid_ticks(y0, y1, _grid_tick_step(y1 - y0, divisions))
+    z_ticks = _grid_ticks(z0, z1, _grid_tick_step(z1 - z0, divisions))
+
+    xs, ys, zs = [], [], []
+
+    def segment(ax, ay, az, bx, by, bz):
+        xs.extend([ax, bx, None])
+        ys.extend([ay, by, None])
+        zs.extend([az, bz, None])
+
+    # Bottom plane (z = z0)
+    for y in y_ticks:
+        segment(x0, y, z0, x1, y, z0)
+    for x in x_ticks:
+        segment(x, y0, z0, x, y1, z0)
+
+    # Back plane (y = y0)
+    for z in z_ticks:
+        segment(x0, y0, z, x1, y0, z)
+    for x in x_ticks:
+        segment(x, y0, z0, x, y0, z1)
+
+    # Side plane (x = x0)
+    for z in z_ticks:
+        segment(x0, y0, z, x0, y1, z)
+    for y in y_ticks:
+        segment(x0, y, z0, x0, y, z1)
+
+    fig.add_trace(go.Scatter3d(
+        x=xs, y=ys, z=zs,
+        mode='lines',
+        line=dict(color=color, width=width),
+        hoverinfo='skip',
+        showlegend=False,
+    ))
+
+
 def create_3d_visualization(add_terms, sub_terms, model, saved_vectors, result=None):
-    """Create a 3D Plotly visualization of the vector expression using PCA."""
-    
-    # Determine if we're in "computed" mode (show only result + neighbors)
+    """
+    Build a 3D Plotly figure for the current vector expression.
+
+    Projects word vectors onto three PCA components, anchors the origin at
+    (0, 0, 0), and draws expression arrows with a scene-box grid.
+
+    Args:
+        add_terms: Terms to add in the expression.
+        sub_terms: Terms to subtract in the expression.
+        model: Loaded gensim KeyedVectors model.
+        saved_vectors: Saved intermediate vectors keyed by id.
+        result: Optional computed result dict with vector and nearest neighbors.
+            When omitted, only cumulative add/subtract steps are shown.
+
+    Returns:
+        A Plotly Figure, or None when fewer than two points are available.
+    """
     computed_mode = result is not None
-    
-    # Collect vectors for PCA fitting - we need all relevant vectors for consistent PCA
+
     all_vectors = []
     all_labels = []
     all_types = []
-    
-    # Always include origin
+
     origin_vec = np.zeros(model.vector_size)
     all_vectors.append(origin_vec)
     all_labels.append("Origin")
     all_types.append('origin')
     
-    # Build the cumulative path for building mode
-    cumulative_positions = []  # List of (cumulative_vec, label, type)
+    cumulative_positions = []
     cumulative_vec = np.zeros(model.vector_size)
-    
-    # Process add terms first, then sub terms (showing cumulative at each step)
+
     for t in add_terms:
         vec, err = resolve_term(t, model, saved_vectors)
         if not err:
@@ -706,7 +820,6 @@ def create_3d_visualization(add_terms, sub_terms, model, saved_vectors, result=N
             cumulative_positions.append((cumulative_vec.copy(), f"−{term_label(t, saved_vectors)}", 'sub'))
     
     if computed_mode:
-        # COMPUTED MODE: Only show origin, result, and neighbors
         all_vectors.append(result["vector"])
         all_labels.append("Result")
         all_types.append('result')
@@ -717,17 +830,14 @@ def create_3d_visualization(add_terms, sub_terms, model, saved_vectors, result=N
                 all_labels.append(f"{word} ({score:.2f})")
                 all_types.append('neighbor')
     else:
-        # BUILDING MODE: Add all cumulative positions
         for cum_vec, label, op_type in cumulative_positions:
             all_vectors.append(cum_vec)
             all_labels.append(label)
             all_types.append(op_type)
     
-    # Need at least origin + 1 other point
     if len(all_vectors) < 2:
         return None
-    
-    # Convert to numpy array and apply PCA
+
     vectors_array = np.array(all_vectors)
     n_components = min(3, len(all_vectors))
     pca = PCA(n_components=n_components)
@@ -736,21 +846,50 @@ def create_3d_visualization(add_terms, sub_terms, model, saved_vectors, result=N
     if n_components < 3:
         padding = np.zeros((coords_3d.shape[0], 3 - n_components))
         coords_3d = np.hstack([coords_3d, padding])
-    
-    # Create the 3D plot
+
+    # Anchor the origin at (0, 0, 0) in the projected space.
+    origin_offset = coords_3d[0].copy()
+    coords_3d = coords_3d - origin_offset
+
+    # Size the scene grid from all displayed points, including the build path.
+    grid_points = [coords_3d]
+    if computed_mode:
+        path_vectors = [np.zeros(model.vector_size)]
+        path_cumulative = np.zeros(model.vector_size)
+        for t in add_terms:
+            vec, err = resolve_term(t, model, saved_vectors)
+            if not err:
+                path_cumulative = path_cumulative + vec
+                path_vectors.append(path_cumulative.copy())
+        for t in sub_terms:
+            vec, err = resolve_term(t, model, saved_vectors)
+            if not err:
+                path_cumulative = path_cumulative - vec
+                path_vectors.append(path_cumulative.copy())
+        if len(path_vectors) > 1:
+            path_coords = pca.transform(np.array(path_vectors))
+            if path_coords.shape[1] < 3:
+                pad = np.zeros((path_coords.shape[0], 3 - path_coords.shape[1]))
+                path_coords = np.hstack([path_coords, pad])
+            grid_points.append(path_coords - origin_offset)
+
+    grid_lo, grid_hi = _scene_grid_bounds(np.vstack(grid_points))
+
     fig = go.Figure()
-    
-    # Color mapping
+    _add_scene_box_grid(fig, grid_lo, grid_hi, width=1.2)
+    legend_shown = {'add': False, 'sub': False}
+
     color_map = {
-        'origin': '#6b7280',   # Gray
-        'add': '#34d399',      # Teal green
-        'sub': '#f87171',      # Light red
-        'result': '#fbbf24',   # Amber/gold
-        'neighbor': '#fbbf24'  # Amber/gold (same as result)
+        'origin': '#6b7280',
+        'add': '#34d399',
+        'sub': '#f87171',
+        'result': '#fbbf24',
+        'neighbor': '#fbbf24',
     }
     
-    def add_arrow_with_cone(fig, start, end, color, label, show_label=True, line_width=5, cone_scale=1.0):
-        """Add an arrow (line + cone arrowhead) from start to end."""
+    def add_arrow_with_cone(fig, start, end, color, label, show_label=True, line_width=5, cone_scale=1.0,
+                            arrow_type=None):
+        """Draw a 3D arrow from start to end using a line segment and cone tip."""
         dx = end[0] - start[0]
         dy = end[1] - start[1]
         dz = end[2] - start[2]
@@ -758,29 +897,41 @@ def create_3d_visualization(add_terms, sub_terms, model, saved_vectors, result=N
         
         if length < 1e-10:
             return
-        
-        # Normalize direction
+
         ux, uy, uz = dx/length, dy/length, dz/length
-        
-        # Cone size proportional to arrow length
         cone_size = max(length * 0.12 * cone_scale, 0.2 * cone_scale)
-        
-        # Line (shaft of arrow)
         shaft_end = [end[0] - ux * cone_size * 0.3, 
                      end[1] - uy * cone_size * 0.3, 
                      end[2] - uz * cone_size * 0.3]
+
+        legendgroup = None
+        legend_name = None
+        show_in_legend = False
+        if arrow_type == 'add':
+            legendgroup = 'add_arrows'
+            legend_name = 'Add (+)'
+            show_in_legend = not legend_shown['add']
+            legend_shown['add'] = True
+        elif arrow_type == 'sub':
+            legendgroup = 'sub_arrows'
+            legend_name = 'Subtract (−)'
+            show_in_legend = not legend_shown['sub']
+            legend_shown['sub'] = True
+
+        line_color = color_map.get(arrow_type, color) if show_in_legend else color
         
         fig.add_trace(go.Scatter3d(
             x=[start[0], shaft_end[0]],
             y=[start[1], shaft_end[1]],
             z=[start[2], shaft_end[2]],
             mode='lines',
-            line=dict(color=color, width=line_width),
-            showlegend=False,
+            line=dict(color=line_color, width=line_width),
+            legendgroup=legendgroup,
+            name=legend_name,
+            showlegend=show_in_legend,
             hoverinfo='skip'
         ))
-        
-        # Cone (arrowhead) at the tip
+
         fig.add_trace(go.Cone(
             x=[end[0]], y=[end[1]], z=[end[2]],
             u=[ux], v=[uy], w=[uz],
@@ -789,38 +940,44 @@ def create_3d_visualization(add_terms, sub_terms, model, saved_vectors, result=N
             anchor='tip',
             colorscale=[[0, color], [1, color]],
             showscale=False,
+            legendgroup=legendgroup,
+            name=legend_name,
+            showlegend=False,
             hoverinfo='skip'
         ))
-        
-        # Label at the tip
+
         if show_label and label:
+            if arrow_type == 'add':
+                label_color = color_map['add']
+            elif arrow_type == 'sub':
+                label_color = color_map['sub']
+            else:
+                label_color = '#e1e2e8'
             fig.add_trace(go.Scatter3d(
                 x=[end[0]], y=[end[1]], z=[end[2]],
                 mode='text',
                 text=[label],
                 textposition='top center',
-                textfont=dict(size=11, color='#e1e2e8'),
+                textfont=dict(size=11, color=label_color),
+                legendgroup=legendgroup,
+                name=legend_name,
                 showlegend=False,
                 hovertemplate=f'<b>{label}</b><extra></extra>'
             ))
     
-    # Origin point (always shown)
     fig.add_trace(go.Scatter3d(
-        x=[coords_3d[0, 0]], y=[coords_3d[0, 1]], z=[coords_3d[0, 2]],
+        x=[0], y=[0], z=[0],
         mode='markers+text',
-        marker=dict(size=10, color=color_map['origin'], symbol='circle'),
-        text=['Origin'],
+        marker=dict(size=10, color='#ffffff', symbol='circle'),
+        text=['(0, 0, 0)'],
         textposition='top center',
-        textfont=dict(size=10, color='#9ca3af'),
+        textfont=dict(size=10, color='#ffffff'),
         name='Origin',
-        hovertemplate='<b>Origin</b><extra></extra>'
+        hovertemplate='<b>Origin</b> (0, 0, 0)<extra></extra>'
     ))
     
     if computed_mode:
-        # COMPUTED MODE: Show building path (faded) + golden result arrow + neighbor dots
-        
-        # First, draw the building path (faded colors so people can trace)
-        # We need to reconstruct the building path from the expression
+        # Overlay the build path, result vector, and nearest neighbors.
         build_vectors = [origin_vec]
         build_labels = ['Origin']
         build_types = ['origin']
@@ -842,49 +999,47 @@ def create_3d_visualization(add_terms, sub_terms, model, saved_vectors, result=N
                 build_labels.append(f"−{term_label(t, saved_vectors)}")
                 build_types.append('sub')
         
-        # Apply same PCA to building vectors
         if len(build_vectors) > 1:
             build_array = np.array(build_vectors)
             build_coords = pca.transform(build_array)
             if build_coords.shape[1] < 3:
                 pad = np.zeros((build_coords.shape[0], 3 - build_coords.shape[1]))
                 build_coords = np.hstack([build_coords, pad])
-            
-            # Draw faded building arrows
-            faded_colors = {
-                'add': 'rgba(52, 211, 153, 0.4)',   # Faded teal
-                'sub': 'rgba(248, 113, 113, 0.4)',  # Faded red
+            build_coords = build_coords - origin_offset
+
+            path_colors = {
+                'add': 'rgba(52, 211, 153, 0.4)',
+                'sub': 'rgba(248, 113, 113, 0.4)',
             }
-            
+
             prev_idx = 0
             for i in range(1, len(build_types)):
                 point_type = build_types[i]
-                arrow_color = faded_colors.get(point_type, '#6b7280')
+                arrow_color = path_colors.get(point_type, '#6b7280')
                 label = build_labels[i]
-                
+
                 start = [build_coords[prev_idx, 0], build_coords[prev_idx, 1], build_coords[prev_idx, 2]]
                 end = [build_coords[i, 0], build_coords[i, 1], build_coords[i, 2]]
-                
-                # Faded arrow (thinner)
-                add_arrow_with_cone(fig, start, end, arrow_color, label, line_width=3, cone_scale=0.7)
+
+                add_arrow_with_cone(
+                    fig, start, end, arrow_color, label,
+                    line_width=3, cone_scale=0.7, arrow_type=point_type,
+                )
                 
                 prev_idx = i
-        
-        # Golden result arrow from origin to result (on top, prominent)
+
         result_idx = all_types.index('result')
-        start = [coords_3d[0, 0], coords_3d[0, 1], coords_3d[0, 2]]
+        start = [0, 0, 0]
         end = [coords_3d[result_idx, 0], coords_3d[result_idx, 1], coords_3d[result_idx, 2]]
         add_arrow_with_cone(fig, start, end, color_map['result'], 'Result', line_width=5, cone_scale=0.9)
-        
-        # Neighbor dots (smaller, lighter)
+
         neighbor_indices = [i for i, t in enumerate(all_types) if t == 'neighbor']
         if neighbor_indices:
             x = [coords_3d[i, 0] for i in neighbor_indices]
             y = [coords_3d[i, 1] for i in neighbor_indices]
             z = [coords_3d[i, 2] for i in neighbor_indices]
             text = [all_labels[i] for i in neighbor_indices]
-            
-            # Small golden dots with label
+
             fig.add_trace(go.Scatter3d(
                 x=x, y=y, z=z,
                 mode='markers+text',
@@ -897,8 +1052,7 @@ def create_3d_visualization(add_terms, sub_terms, model, saved_vectors, result=N
                 hovertemplate='<b>%{text}</b><extra></extra>'
             ))
     else:
-        # BUILDING MODE: Draw cumulative arrows with cones tip-to-tip
-        prev_idx = 0  # Start from origin
+        prev_idx = 0
         for i in range(1, len(all_types)):
             point_type = all_types[i]
             arrow_color = color_map[point_type]
@@ -907,19 +1061,27 @@ def create_3d_visualization(add_terms, sub_terms, model, saved_vectors, result=N
             start = [coords_3d[prev_idx, 0], coords_3d[prev_idx, 1], coords_3d[prev_idx, 2]]
             end = [coords_3d[i, 0], coords_3d[i, 1], coords_3d[i, 2]]
             
-            add_arrow_with_cone(fig, start, end, arrow_color, label)
+            add_arrow_with_cone(fig, start, end, arrow_color, label, arrow_type=point_type)
             
             prev_idx = i
-    
-    # Update layout - DARK THEME with smooth camera
+
+    scene_axis = dict(
+        showgrid=False,
+        showticklabels=False,
+        title='',
+        backgroundcolor='#0f1117',
+        zeroline=True,
+        zerolinecolor='#9aa0b8',
+        zerolinewidth=1.5,
+        showline=True,
+        linecolor='#6b7280',
+        linewidth=1.5,
+    )
     fig.update_layout(
         scene=dict(
-            xaxis=dict(showgrid=True, gridcolor='#4a4d5e', showticklabels=False, title='', 
-                      backgroundcolor='#0f1117', zerolinecolor='#5a5d6e'),
-            yaxis=dict(showgrid=True, gridcolor='#4a4d5e', showticklabels=False, title='',
-                      backgroundcolor='#0f1117', zerolinecolor='#5a5d6e'),
-            zaxis=dict(showgrid=True, gridcolor='#4a4d5e', showticklabels=False, title='',
-                      backgroundcolor='#0f1117', zerolinecolor='#5a5d6e'),
+            xaxis={**scene_axis, 'range': [grid_lo[0], grid_hi[0]]},
+            yaxis={**scene_axis, 'range': [grid_lo[1], grid_hi[1]]},
+            zaxis={**scene_axis, 'range': [grid_lo[2], grid_hi[2]]},
             bgcolor='#0f1117',
             camera=dict(
                 eye=dict(x=1.5, y=1.5, z=1.2)
@@ -936,15 +1098,16 @@ def create_3d_visualization(add_terms, sub_terms, model, saved_vectors, result=N
             y=1.02,
             xanchor='center',
             x=0.5,
-            bgcolor='rgba(0,0,0,0)'
+            bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#ffffff', size=12, family='Inter, sans-serif', weight='bold'),
         ),
         showlegend=True,
-        uirevision='constant'  # Helps maintain camera position between updates
+        uirevision='constant',
     )
     
     return fig
 
-# ─── SESSION STATE ─────────────────────────────────────────────
+# ─── Session state ─────────────────────────────────────────────────────────
 def _init_state():
     defaults = {
         "expr": {"add": [], "sub": []},
@@ -962,6 +1125,7 @@ def _init_state():
 _init_state()
 
 def save_vector_from_result(label, vector):
+    """Persist a computed vector in session state and return its reference id."""
     vid = f"v{len(st.session_state.saved_vectors) + 1}"
     st.session_state.saved_vectors[vid] = {
         "label": label,
@@ -970,6 +1134,7 @@ def save_vector_from_result(label, vector):
     return vid
 
 def append_history(expr_str, nearest, vector, add_terms, sub_terms):
+    """Record a computed expression and its result in session history."""
     cell_id = st.session_state.next_cell
     st.session_state.next_cell += 1
     vid = save_vector_from_result(expr_str, vector)
@@ -982,7 +1147,7 @@ def append_history(expr_str, nearest, vector, add_terms, sub_terms):
         "sub": list(sub_terms),
     })
 
-# ─── HEADER ────────────────────────────────────────────────────
+# ─── Header ────────────────────────────────────────────────────────────────
 st.markdown("""
 <div>
   <div class="title-main">Embedding Lab</div>
@@ -1007,8 +1172,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-
-# ─── MODEL LOADER ──────────────────────────────────────────────
+# ─── Model loader ───────────────────────────────────────────────────────────
 if not st.session_state.model_loaded:
     st.markdown("""
     <div style='background-color:#1a1b26; border:1px solid #2a2d3e; border-radius:8px;
@@ -1050,7 +1214,7 @@ wv = st.session_state.wv
 expr = st.session_state.expr
 saved = st.session_state.saved_vectors
 
-# ─── MAIN WORKSPACE ────────────────────────────────────────────
+# ─── Main workspace ────────────────────────────────────────────────────────
 col_left, col_right = st.columns([1, 1], gap="medium")
 
 with col_left:
@@ -1133,7 +1297,6 @@ with col_left:
             st.session_state.result = None
             st.rerun()
 
-        # Render Expression Box
         expr_str = format_expression(expr["add"], expr["sub"], saved)
 
         if not expr["add"] and not expr["sub"]:
@@ -1165,7 +1328,7 @@ with col_left:
                                 expr["sub"].remove(t)
                                 st.rerun()
 
-    # ─── 3D VISUALIZATION CONTAINER ─────────────────────────────────
+    # ─── 3D visualization panel ─────────────────────────────────────────────
     with st.container(border=True, key="viz_3d_container"):
         st.markdown(
             '<div class="section-title" style="color: #60a5fa;">Vector Space Visualization</div>'
@@ -1270,56 +1433,58 @@ with col_right:
                         st.toast(f"Saved as @{vid}")
                         st.rerun()
 
-# ─── HISTORY ───────────────────────────────────────────────────
+# ─── History ───────────────────────────────────────────────────────────────
 if st.session_state.history:
     with st.expander("Experiment History", expanded=True):
-        for cell in st.session_state.history:
-            top4 = ", ".join(w for w, _ in cell["nearest"][:TOP_NEIGHBORS])
-            cell_uid = f"cell_{cell['id']}"
-            st.markdown(
-                f'<div class="history-row">'
-                f'<div class="history-expr">{cell["expr_str"]}</div>'
-                f'<div class="history-res">→ {top4}</div></div>',
-                unsafe_allow_html=True,
-            )
-            bc1, bc2, bc3, bc4 = st.columns(4)
-            with bc1:
-                if st.button("Restore", key=f"{cell_uid}_load"):
-                    st.session_state.expr = {
-                        "add": list(cell.get("add", [])),
-                        "sub": list(cell.get("sub", [])),
-                    }
-                    ref = cell["vector_ref"]
-                    st.session_state.result = {
-                        "expr_str": cell["expr_str"],
-                        "nearest": cell["nearest"],
-                        "vector": saved[ref[1:]]["vector"],
-                    }
-                    st.rerun()
-            with bc2:
-                if st.button("Add", key=f"{cell_uid}_add"):
-                    ref = cell["vector_ref"]
-                    if ref not in expr["add"]:
-                        expr["add"].append(ref)
+        with st.container(key="experiment_history"):
+            for cell in st.session_state.history:
+                top4 = ", ".join(w for w, _ in cell["nearest"][:TOP_NEIGHBORS])
+                cell_uid = f"cell_{cell['id']}"
+                st.markdown(
+                    f'<div class="history-row">'
+                    f'<div class="history-expr">{cell["expr_str"]}</div>'
+                    f'<div class="history-res">→ {top4}</div></div>',
+                    unsafe_allow_html=True,
+                )
+                bc1, bc2, bc3, bc4 = st.columns(4)
+                with bc1:
+                    if st.button("Restore", key=f"{cell_uid}_load"):
+                        st.session_state.expr = {
+                            "add": list(cell.get("add", [])),
+                            "sub": list(cell.get("sub", [])),
+                        }
+                        ref = cell["vector_ref"]
+                        st.session_state.result = {
+                            "expr_str": cell["expr_str"],
+                            "nearest": cell["nearest"],
+                            "vector": saved[ref[1:]]["vector"],
+                        }
                         st.rerun()
-            with bc3:
-                if st.button("Sub", key=f"{cell_uid}_sub"):
-                    ref = cell["vector_ref"]
-                    if ref not in expr["sub"]:
-                        expr["sub"].append(ref)
+                with bc2:
+                    if st.button("Add", key=f"{cell_uid}_add"):
+                        ref = cell["vector_ref"]
+                        if ref not in expr["add"]:
+                            expr["add"].append(ref)
+                            st.rerun()
+                with bc3:
+                    if st.button("Sub", key=f"{cell_uid}_sub"):
+                        ref = cell["vector_ref"]
+                        if ref not in expr["sub"]:
+                            expr["sub"].append(ref)
+                            st.rerun()
+                with bc4:
+                    if st.button("Show", key=f"{cell_uid}_show"):
+                        ref = cell["vector_ref"]
+                        st.session_state.result = {
+                            "expr_str": cell["expr_str"],
+                            "nearest": cell["nearest"],
+                            "vector": saved[ref[1:]]["vector"],
+                        }
                         st.rerun()
-            with bc4:
-                if st.button("Show", key=f"{cell_uid}_show"):
-                    ref = cell["vector_ref"]
-                    st.session_state.result = {
-                        "expr_str": cell["expr_str"],
-                        "nearest": cell["nearest"],
-                        "vector": saved[ref[1:]]["vector"],
-                    }
-                    st.rerun()
 
+# ─── Footer ──────────────────────────────────────────────────────────────
 st.markdown(
-    '<p style="text-align:center; color:#565a6e; font-size:12px; margin-top:32px;">'
+    '<p style="text-align:center; color:#ffffff; font-size:12px; font-weight:bold; margin-top:32px;">'
     "GloVe-Wiki-Gigaword-100 • Cosine Similarity • 100 Dimensions</p>",
     unsafe_allow_html=True,
 )
