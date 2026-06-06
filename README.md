@@ -4,7 +4,7 @@
 
 Whether you are a student encountering the theory for the first time, an instructor looking for a live classroom demo, or a practitioner trying to deepen your intuition, this lab gives abstract vector math a concrete face. You can build expressions, inspect nearest semantic neighbors, and watch simplified 3D geometry update as meaning moves through vector space.
 
-The core insight is simple: **embeddings represent words as positions and directions in a vector space.**
+The core insight is simple — **embeddings represent words as positions and directions in a vector space.**
 
 Because related words often occupy related regions and directions, we can explore meaning through vector arithmetic — adding, subtracting, comparing, and visualizing words as movements in semantic space.
 
@@ -30,7 +30,7 @@ On first run, the app downloads **GloVe-Wiki-Gigaword-100** (~134 MB) via Gensim
 
 ## How it works — step by step
 
-The app header shows a three-step flow: **Build expression → Compute → Discover.**
+The app header shows a three-step flow — **Build expression → Compute → Discover.**
 
 ### Step 1 — Build Expression
 
