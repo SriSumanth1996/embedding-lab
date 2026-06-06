@@ -1,6 +1,6 @@
 # Embedding Lab
 
-Interactive education material for any GenAI Program.
+Interactive education material for the concept of "embeddings" in any GenAI Program.
 This app is designed to demystify word embeddings for learners who are new to AI. Instead of treating embeddings as abstract mathematical objects, the lab turns them into something participants can experiment with, test, and visually explore.
 
 ## Why this lab is useful
