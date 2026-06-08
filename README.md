@@ -2,136 +2,317 @@
 
 ![Embedding Lab](logo.png)
 
-**Embedding Lab** makes one of the most important ideas in NLP and Generative AI — **word embeddings** — immediately tangible.
+## 🚀 Try it live
 
-Whether you are a student encountering the theory for the first time, an instructor looking for a live classroom demo, or a practitioner trying to deepen your intuition, this lab gives abstract vector math a concrete face. You can build expressions, inspect nearest semantic neighbors, and watch simplified 3D geometry update as meaning moves through vector space.
+You can use the hosted app here:
 
-The core insight is simple — **embeddings represent words as positions and directions in a vector space.**
-
-Because related words often occupy related regions and directions, we can explore meaning through vector arithmetic — adding, subtracting, comparing, and visualizing words as movements in semantic space.
+👉 [Open Embedding Lab](https://embedding-lab-7yduhyt8ixtatf2xgvxemy.streamlit.app/)
 
 ---
 
-## Run locally
+**Embedding Lab** is an interactive intuition lab for one of the most powerful ideas behind modern NLP and Generative AI: **word embeddings**.
 
-**Requirements:** Python 3.11 recommended
+Instead of treating embeddings as abstract vectors hidden inside a model, this lab turns them into something you can **build, move, compare, visualize, and experiment with**.
+
+Type a word. Add another. Subtract a concept. Compute the result. Watch the meaning move.
+
+Embedding Lab helps you see that embeddings are not just numbers — they are **semantic positions and directions in a high-dimensional space**.
+
+---
+
+## ✨ Why this exists
+
+Word embeddings are often introduced with famous examples like:
+
+```text
+king - man + woman ≈ queen
+```
+
+But the real magic is not the example.
+
+The magic is the idea that **meaning can be represented geometrically**.
+
+Words that appear in similar contexts tend to live near each other. Relationships between words often appear as directions. Similarity becomes distance. Analogy becomes movement.
+
+Embedding Lab makes this idea tangible.
+
+It gives students, instructors, and curious practitioners a live playground where they can:
+
+- build vector arithmetic expressions,
+- inspect nearest semantic neighbors,
+- visualize simplified movement through vector space,
+- save intermediate vectors,
+- restore previous experiments,
+- and develop intuition for how language models represent meaning.
+
+---
+
+## 🚀 What you can do
+
+Embedding Lab lets you explore semantic relationships using simple vector operations.
+
+You can build expressions like:
+
+```text
+(paris - france) + italy
+```
+
+or:
+
+```text
+(king - man) + woman
+```
+
+and immediately see the closest words returned by the embedding model.
+
+The app uses **GloVe-Wiki-Gigaword-100**, a 100-dimensional pretrained word-vector model, and retrieves nearest neighbors using **cosine similarity**.
+
+The result is a small but powerful sandbox for understanding how distributional meaning behaves.
+
+---
+
+## 🧠 Core idea
+
+Embeddings represent words as vectors.
+
+A vector has both:
+
+- a **position** in space, and
+- a **direction** relative to other vectors.
+
+Because semantically related words often occupy related regions, we can explore meaning through vector arithmetic:
+
+```text
+meaning ≈ movement through vector space
+```
+
+This lab is built around that idea.
+
+You are not just reading about embeddings.
+
+You are moving through them.
+
+---
+
+## 🖥️ Run locally
+
+### Requirements
+
+Python **3.11** is recommended.
+
+Install dependencies:
 
 ```bash
 pip install streamlit gensim==4.3.3 "numpy<2.0" "scipy<1.14" plotly scikit-learn
 ```
 
+Run the app:
+
 ```bash
 streamlit run app.py
 ```
 
-Open the local URL printed in the terminal, then click **Load Model**.
+Then open the local URL printed in your terminal and click **Load Model**.
 
-On first run, the app downloads **GloVe-Wiki-Gigaword-100** (~134 MB) via Gensim and caches it locally. Subsequent runs load straight from the cache.
+On first run, the app downloads:
+
+```text
+glove-wiki-gigaword-100
+```
+
+The model is approximately **134 MB** and is cached locally by Gensim. After the first download, future runs load directly from cache.
 
 ---
 
-## How it works — step by step
+## 🧭 How the lab works
 
-The app header shows a three-step flow — **Build expression → Compute → Discover.**
+The app follows a simple three-step flow:
 
-### Step 1 — Build Expression
-
-Use the **Term** text field to type a vocabulary word. Or pick a previously saved result from the **Saved Vectors** dropdown (these appear after you save a Compute result).
-
-Four buttons act on the current expression:
-
-| Button | What it does |
-|---|---|
-| **＋ Add** | Appends the typed word (or selected saved vector) to the add list |
-| **− Sub** | Appends it to the subtract list |
-| **Clear** | Resets the entire expression and clears the last result |
-| **Compute** | Evaluates the expression and finds the top 4 nearest neighbors |
-
-Each term appears as a removable chip below the expression formula — green chips for added terms, red chips for subtracted terms. Click a chip to remove that term.
-
-> Numbers are not accepted as terms. If a word is not in the GloVe vocabulary, a warning is shown and the term is not added.
-
-### Step 2 — Compute
-
-Click **Compute**. The app sums the add vectors, subtracts the subtract vectors, and queries GloVe for the 4 nearest vocabulary words by cosine similarity. Input terms are automatically excluded from results.
-
-The expression is written in the form:
-
+```text
+Build Expression → Compute → Discover
 ```
+
+---
+
+## 1. Build Expression
+
+Start by typing a vocabulary word into the **Term** field.
+
+You can then choose how that word should affect the current expression:
+
+| Button | Action |
+|---|---|
+| **＋ Add** | Adds the word to the expression |
+| **− Sub** | Subtracts the word from the expression |
+| **Clear** | Resets the expression and clears the latest result |
+| **Compute** | Evaluates the vector expression and finds nearest neighbors |
+
+As you build the expression, each term appears as a removable chip:
+
+- **Green chips** represent added terms.
+- **Red chips** represent subtracted terms.
+
+You can remove any term by clicking its chip.
+
+Numbers are not accepted as terms. If a word is not present in the GloVe vocabulary, the app shows a warning and does not add it.
+
+---
+
+## 2. Compute
+
+When you click **Compute**, the app:
+
+1. retrieves the vector for each added term,
+2. retrieves the vector for each subtracted term,
+3. sums the added vectors,
+4. subtracts the subtracted vectors,
+5. searches for the nearest words by cosine similarity,
+6. excludes the original input words from the result list.
+
+For example:
+
+```text
+paris - france + italy
+```
+
+is interpreted as:
+
+```text
 (paris - france) + italy
 ```
 
-### Step 3 — Discover
+The app then returns the top semantic neighbors for the resulting vector.
 
-The **Closest Words** panel (right column) shows the top 4 neighbors ranked by cosine similarity score, with a proportional bar for each. Under every neighbor are three buttons:
+---
 
-| Button | What it does |
+## 3. Discover
+
+The **Closest Words** panel shows the top 4 nearest words.
+
+Each result includes:
+
+- rank,
+- word,
+- cosine similarity score,
+- proportional similarity bar.
+
+Every neighbor can also become part of a new experiment.
+
+| Button | Action |
 |---|---|
-| **Add** | Appends that neighbor to the current expression's add list |
-| **Subtract** | Appends it to the subtract list |
-| **Start Fresh** | Clears the expression and begins a new one with that word as the sole base term |
+| **Add** | Adds the neighbor to the current expression |
+| **Subtract** | Subtracts the neighbor from the current expression |
+| **Start Fresh** | Clears the expression and starts a new one with that word |
 
-Expand **Save this result** to give the computed vector a name and save it. It will appear in the **Saved Vectors** dropdown as `@v1`, `@v2`, etc. and can be reused in any later expression.
-
----
-
-## Vector Space Visualization
-
-The left column also shows a **3D PCA projection** of the current expression:
-
-- **Green arrows** — cumulative position after each added term
-- **Red arrows** — cumulative position after each subtracted term
-- **Origin** — fixed at (0, 0, 0)
-- **After Compute** — the result vector and nearest-neighbor points are added
-
-The 3D chart updates as you add terms, before you compute. After Compute it switches to showing the result vector and neighbors instead.
-
-> This is a PCA projection for intuition. Distances in the 3D plot do not equal distances in the original 100-dimensional space.
+This makes exploration feel like semantic browsing: every result can become the next input.
 
 ---
 
-## Experiment History
+## 🧊 Build on discoveries
 
-Every Compute call is recorded in the **Experiment History** expander at the bottom. Each entry shows the expression and its top neighbors. Four buttons are available per entry:
+One of the most powerful parts of Embedding Lab is that every result can become the starting point for a new experiment.
 
-| Button | What it does |
+When a computed neighbor catches your attention, you can:
+
+- add it to the current expression,
+- subtract it from the current expression,
+- or start an entirely new exploration from that word.
+
+This creates a natural workflow of discovery:
+
+```text
+Compute → Inspect → Extend → Compute Again
+```
+
+Rather than running isolated analogies, you can follow semantic trails through the embedding space and observe how meaning shifts with each vector operation.
+
+---
+
+## 📊 Vector Space Visualization
+
+The app includes a simplified **3D PCA visualization** of the current expression.
+
+Since the original embeddings live in 100 dimensions, the app uses **Principal Component Analysis** to project them into 3 dimensions for visual intuition.
+
+The visualization shows:
+
+- **Origin** at `(0, 0, 0)`,
+- **green arrows** for added vector movement,
+- **red arrows** for subtracted vector movement,
+- **result vector** after computation,
+- **nearest-neighbor points** around the computed result.
+
+Before computing, the chart updates as you add or subtract terms.
+
+After computing, it switches to a result-focused view showing the computed vector and its closest semantic neighbors.
+
+> The 3D plot is an intuition aid. Distances in the PCA projection are not identical to distances in the original 100-dimensional embedding space.
+
+---
+
+## 🧾 Experiment History
+
+Every computed expression is automatically recorded in **Experiment History**.
+
+Each history entry stores:
+
+- the expression,
+- the top nearest words,
+- the computed vector,
+- the original add/subtract structure.
+
+You can interact with previous experiments using:
+
+| Button | Action |
 |---|---|
-| **Restore** | Reloads the expression and result exactly as they were |
-| **Add** | Adds the saved result vector to the current expression |
-| **Sub** | Subtracts the saved result vector from the current expression |
-| **Show** | Re-displays the result in the Closest Words panel without changing the expression |
+| **Restore** | Reloads the expression and result |
+| **＋ Add** | Adds the saved result vector to the current expression so you can continue exploring from that point |
+| **− Sub** | Subtracts the saved result vector from the current expression so you can use it as a reference direction |
+| **Remove** | Deletes the history entry and its saved vector |
+
+This makes the lab useful not only for quick demos, but also for longer chains of exploration.
 
 ---
 
-## Example expressions to try
+## 🧪 Example experiments
 
-| Idea | Add | Subtract | Equivalent to |
+Try these expressions to get started:
+
+| Idea | Add | Subtract | Expression |
 |---|---|---|---|
-| Country analogy | `paris`, `italy` | `france` | `paris − france + italy` |
-| Historical analogy | `gandhi`, `germany` | `india` | `gandhi − india + germany` |
-| Product analogy | `microsoft`, `iphone` | `apple` | `microsoft − apple + iphone` |
-| Environment contrast | `arctic`, `sand` | `desert` | `arctic − desert + sand` |
-| Classic gender demo | `king`, `woman` | `man` | `king − man + woman` |
+| Country analogy | `paris`, `italy` | `france` | `paris - france + italy` |
+| Historical analogy | `gandhi`, `germany` | `india` | `gandhi - india + germany` |
+| Product analogy | `microsoft`, `iphone` | `apple` | `microsoft - apple + iphone` |
+| Environment contrast | `arctic`, `sand` | `desert` | `arctic - desert + sand` |
+| Classic analogy demo | `king`, `woman` | `man` | `king - man + woman` |
 
-Results depend on the GloVe training corpus. Some words may not be in the vocabulary.
+Results depend on the vocabulary and training corpus used by GloVe. Some words may be missing, and some analogies may produce surprising or imperfect results.
+
+That is part of the lesson.
+
+Embeddings are powerful, but they are also shaped by data.
 
 ---
 
-## Technical details
+## 🔬 Technical details
 
 | Item | Value |
 |---|---|
 | Model | `glove-wiki-gigaword-100` |
-| Dimensions | 100 |
-| Vocabulary | ~400 k tokens |
-| Similarity metric | Cosine similarity (`KeyedVectors.similar_by_vector`) |
-| Top neighbors shown | 4 (`TOP_NEIGHBORS` constant) |
-| Visualization | PCA → 3 components, Plotly `Scatter3d` |
-| Saved vectors | Session-only (`st.session_state`); not written to disk |
+| Embedding dimensions | 100 |
+| Vocabulary size | ~400k tokens |
+| Similarity metric | Cosine similarity |
+| Neighbor search | `KeyedVectors.similar_by_vector` |
+| Top neighbors shown | 4 |
+| Visualization | PCA to 3 components |
+| Charting | Plotly `Scatter3d` and 3D arrows |
+| App state | Streamlit session state |
+| Saved vectors | Session-only |
+| Persistence | No database or disk writes for saved vectors |
 
 ---
 
-## Stack
+## 🧱 Stack
 
 - [Streamlit](https://streamlit.io) — UI
 - [Gensim](https://radimrehurek.com/gensim/) — model loading and similarity search
@@ -139,3 +320,62 @@ Results depend on the GloVe training corpus. Some words may not be in the vocabu
 - [Plotly](https://plotly.com) — 3D visualization
 - [scikit-learn](https://scikit-learn.org) — PCA dimensionality reduction
 - [NumPy](https://numpy.org) — vector arithmetic
+
+---
+
+## 🎓 Who this is for
+
+Embedding Lab is useful for:
+
+- students learning NLP or Generative AI,
+- instructors teaching embeddings live,
+- developers building intuition for vector databases and retrieval,
+- practitioners who want to understand semantic similarity beyond the buzzwords,
+- anyone curious about how language can become geometry.
+
+---
+
+## 💡 What you learn
+
+By experimenting with this lab, you develop intuition for:
+
+- how words become vectors,
+- why cosine similarity is useful,
+- how analogies can emerge from vector arithmetic,
+- why embeddings capture relationships rather than definitions,
+- how high-dimensional meaning can be approximated visually,
+- and why modern AI systems rely so heavily on representation learning.
+
+---
+
+## ⚠️ Notes and limitations
+
+This lab is designed for intuition.
+
+It uses pretrained static word embeddings, not contextual transformer embeddings. That means each word has one fixed vector regardless of sentence context.
+
+For example, the word `bank` has one representation, whether it means a river bank or a financial bank.
+
+Modern language models use richer contextual representations, but static embeddings are still one of the clearest ways to understand the foundation:
+
+```text
+meaning as geometry
+```
+
+---
+
+## 🌟 Why it matters
+
+Embeddings are everywhere in modern AI.
+
+They power semantic search, recommendation systems, retrieval-augmented generation, clustering, classification, and many parts of language understanding.
+
+But they can feel mysterious until you interact with them directly.
+
+Embedding Lab turns that mystery into motion.
+
+It lets you see meaning as movement, similarity as closeness, and analogy as direction.
+
+That is the goal:
+
+> Make embeddings feel less like magic — and more like something you can explore.
