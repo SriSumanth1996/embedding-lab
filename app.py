@@ -1366,7 +1366,7 @@ with col_left:
                 result=st.session_state.result
             )
             if fig:
-                st.plotly_chart(fig, use_container_width=True, key="viz_3d_chart", config={'displayModeBar': True})
+                st.plotly_chart(fig, width='stretch', key="viz_3d_chart", config={'displayModeBar': True})
             else:
                 st.markdown(
                     '<div style="text-align:center; padding:40px 16px; color:#565a6e;">'
