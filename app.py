@@ -129,23 +129,24 @@ div[data-testid="stTextInput"] > div:focus-within {
     font-weight: 600 !important;
 }
 
-/* Saved Vectors selectbox — visible @ ref while typing and after selection */
-.st-key-saved_pick_main div[data-testid="stSelectbox"] [data-baseweb="select"] input {
-    caret-color: #ffffff !important;
-    caret-width: thick !important;
-    font-weight: 600 !important;
-    color: #e1e2e8 !important;
-    -webkit-text-fill-color: #e1e2e8 !important;
-    opacity: 1 !important;
+/* Term box — committed add/sub chips */
+div[data-testid="stVerticalBlock"].st-key-term_chips_box {
+    background-color: #1a1b26 !important;
+    border: 1px solid #3a3d4e !important;
+    border-radius: 8px !important;
+    padding: 12px 14px !important;
+    min-height: 44px !important;
+    margin-top: 8px !important;
+    margin-bottom: 12px !important;
 }
-.st-key-saved_pick_main div[data-testid="stSelectbox"] [class*="singleValue"] {
-    font-weight: 600 !important;
-    color: #e1e2e8 !important;
+.term-box-empty {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: #565a6e;
+    font-style: italic;
 }
-.st-key-saved_pick_main div[data-testid="stSelectbox"] > div:focus-within > div {
-    border-color: #8b8fa3 !important;
-    box-shadow: 0 0 0 1px #8b8fa3 !important;
-}
+
+
 
 /* Closest Words inputs */
 .st-key-closest_words_container div[data-testid="stTextInput"] input {
@@ -520,6 +521,38 @@ div[data-testid="stButton"] > button div {
     background-color: #1a1b26 !important;
 }
 
+/* History Add button */
+.st-key-experiment_history [class*="_add"] div[data-testid="stButton"] button {
+    background-color: #34d399 !important;
+    color: #000000 !important;
+    border: none !important;
+    font-weight: 600 !important;
+}
+.st-key-experiment_history [class*="_add"] div[data-testid="stButton"] button:hover {
+    background-color: #10b981 !important;
+}
+.st-key-experiment_history [class*="_add"] div[data-testid="stButton"] button p,
+.st-key-experiment_history [class*="_add"] div[data-testid="stButton"] button span,
+.st-key-experiment_history [class*="_add"] div[data-testid="stButton"] button div {
+    color: #000000 !important;
+}
+
+/* History Sub button */
+.st-key-experiment_history [class*="_sub"] div[data-testid="stButton"] button {
+    background-color: #f87171 !important;
+    color: #000000 !important;
+    border: none !important;
+    font-weight: 600 !important;
+}
+.st-key-experiment_history [class*="_sub"] div[data-testid="stButton"] button:hover {
+    background-color: #ef4444 !important;
+}
+.st-key-experiment_history [class*="_sub"] div[data-testid="stButton"] button p,
+.st-key-experiment_history [class*="_sub"] div[data-testid="stButton"] button span,
+.st-key-experiment_history [class*="_sub"] div[data-testid="stButton"] button div {
+    color: #000000 !important;
+}
+
 /* Expander */
 .streamlit-expanderHeader,
 div[data-testid="stExpander"] details summary,
@@ -562,6 +595,8 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] {
         });
     });
     observer.observe(document.body, { childList: true, subtree: true });
+
+
 </script>
 """, unsafe_allow_html=True)
 
@@ -1135,6 +1170,7 @@ def _init_state():
         "model_loaded": False,
         "wv": None,
         "next_cell": 1,
+        "input_key_counter": 0,
     }
     for key, val in defaults.items():
         if key not in st.session_state:
@@ -1164,6 +1200,21 @@ def append_history(expr_str, nearest, vector, add_terms, sub_terms):
         "add": list(add_terms),
         "sub": list(sub_terms),
     })
+
+
+def remove_history_cell(cell):
+    """Remove a history entry and its saved vector from session state."""
+    ref = cell["vector_ref"]
+    vid = ref[1:]
+    st.session_state.history = [c for c in st.session_state.history if c["id"] != cell["id"]]
+    if vid in st.session_state.saved_vectors:
+        del st.session_state.saved_vectors[vid]
+
+    st.session_state.expr["add"] = [t for t in st.session_state.expr["add"] if t != ref]
+    st.session_state.expr["sub"] = [t for t in st.session_state.expr["sub"] if t != ref]
+    if st.session_state.result and st.session_state.result.get("expr_str") == cell["expr_str"]:
+        st.session_state.result = None
+
 
 # ─── Header ────────────────────────────────────────────────────────────────
 st.markdown("""
@@ -1243,22 +1294,35 @@ with col_left:
             unsafe_allow_html=True,
         )
 
-        word_input = st.text_input("Term", placeholder="e.g. king", key="word_input_main")
+        word_input = st.text_input("Term", placeholder="e.g. king", key=f"word_input_{st.session_state.input_key_counter}")
         word = word_input.strip().lower()
 
-        picked_ref = None
-        if saved:
-            saved_options = [
-                f"@{vid} ({meta['label'][:40]})" for vid, meta in saved.items()
-            ]
-            picked_saved = st.selectbox(
-                "Saved Vectors",
-                saved_options,
-                index=None,
-                placeholder="— reuse a past result —",
-                key="saved_pick_main",
-            )
-            picked_ref = picked_saved.split()[0] if picked_saved else None
+        with st.container(key="term_chips_box"):
+            if expr["add"] or expr["sub"]:
+                with st.container(key="chips_add"):
+                    if expr["add"]:
+                        cols = st.columns(len(expr["add"]))
+                        for col, t in zip(cols, list(expr["add"])):
+                            lbl = term_label(t, saved)
+                            with col:
+                                if st.button(f"+ {lbl}  ✕", key=f"chip_rm_add_{t}"):
+                                    expr["add"].remove(t)
+                                    st.rerun()
+                with st.container(key="chips_sub"):
+                    if expr["sub"]:
+                        cols = st.columns(len(expr["sub"]))
+                        for col, t in zip(cols, list(expr["sub"])):
+                            lbl = term_label(t, saved)
+                            with col:
+                                if st.button(f"− {lbl}  ✕", key=f"chip_rm_sub_{t}"):
+                                    expr["sub"].remove(t)
+                                    st.rerun()
+            else:
+                st.markdown(
+                    '<span class="term-box-empty">Added terms appear here in green; subtracted terms in red.</span>',
+                    unsafe_allow_html=True,
+                )
+
 
         with st.container(key="expr_btn_row"):
             b1, b2, b3, b4 = st.columns(4)
@@ -1276,16 +1340,24 @@ with col_left:
             if missing:
                 st.error(f"Could not compute — missing: {', '.join(missing)}")
             else:
-                exclude = [t for t in expr["add"] + expr["sub"] if not is_saved_ref(t)]
-                nearest = nearest_words_for_vec(vec, wv, exclude_words=exclude)
-                expr_str = format_expression(expr["add"], expr["sub"], saved)
-                st.session_state.result = {
-                    "expr_str": expr_str,
-                    "nearest": nearest,
-                    "vector": vec,
-                }
-                append_history(expr_str, nearest, vec, expr["add"], expr["sub"])
-                st.rerun()
+                # Check if this exact expression already exists in history.
+                duplicate = any(
+                    h["add"] == expr["add"] and h["sub"] == expr["sub"]
+                    for h in st.session_state.history
+                )
+                if duplicate:
+                    st.warning("Expression unchanged — add or subtract a term to create a new entry.")
+                else:
+                    exclude = [t for t in expr["add"] + expr["sub"] if not is_saved_ref(t)]
+                    nearest = nearest_words_for_vec(vec, wv, exclude_words=exclude)
+                    expr_str = format_expression(expr["add"], expr["sub"], saved)
+                    st.session_state.result = {
+                        "expr_str": expr_str,
+                        "nearest": nearest,
+                        "vector": vec,
+                    }
+                    append_history(expr_str, nearest, vec, expr["add"], expr["sub"])
+                    st.rerun()
 
         if add_clicked:
             if word:
@@ -1295,10 +1367,9 @@ with col_left:
                     st.warning(f"'{word}' not in vocabulary.")
                 elif word not in expr["add"]:
                     expr["add"].append(word)
+                    st.session_state.input_key_counter += 1
                     st.rerun()
-            elif picked_ref and picked_ref not in expr["add"]:
-                expr["add"].append(picked_ref)
-                st.rerun()
+
 
         if sub_clicked:
             if word:
@@ -1308,10 +1379,9 @@ with col_left:
                     st.warning(f"'{word}' not in vocabulary.")
                 elif word not in expr["sub"]:
                     expr["sub"].append(word)
+                    st.session_state.input_key_counter += 1
                     st.rerun()
-            elif picked_ref and picked_ref not in expr["sub"]:
-                expr["sub"].append(picked_ref)
-                st.rerun()
+
 
         if clear_clicked:
             st.session_state.expr = {"add": [], "sub": []}
@@ -1330,24 +1400,6 @@ with col_left:
                 f'<div class="expr-box"><div class="expr-formula">{expr_str}</div></div>',
                 unsafe_allow_html=True,
             )
-            with st.container(key="chips_add"):
-                if expr["add"]:
-                    cols = st.columns(len(expr["add"]))
-                    for col, t in zip(cols, list(expr["add"])):
-                        lbl = term_label(t, saved)
-                        with col:
-                            if st.button(f"+ {lbl}  ✕", key=f"chip_rm_add_{t}"):
-                                expr["add"].remove(t)
-                                st.rerun()
-            with st.container(key="chips_sub"):
-                if expr["sub"]:
-                    cols = st.columns(len(expr["sub"]))
-                    for col, t in zip(cols, list(expr["sub"])):
-                        lbl = term_label(t, saved)
-                        with col:
-                            if st.button(f"− {lbl}  ✕", key=f"chip_rm_sub_{t}"):
-                                expr["sub"].remove(t)
-                                st.rerun()
 
     # ─── 3D visualization panel ─────────────────────────────────────────────
     with st.container(border=True, key="viz_3d_container"):
@@ -1482,25 +1534,20 @@ if st.session_state.history:
                         }
                         st.rerun()
                 with bc2:
-                    if st.button("Add", key=f"{cell_uid}_add"):
+                    if st.button("＋ Add", key=f"{cell_uid}_add"):
                         ref = cell["vector_ref"]
                         if ref not in expr["add"]:
                             expr["add"].append(ref)
                             st.rerun()
                 with bc3:
-                    if st.button("Sub", key=f"{cell_uid}_sub"):
+                    if st.button("− Sub", key=f"{cell_uid}_sub"):
                         ref = cell["vector_ref"]
                         if ref not in expr["sub"]:
                             expr["sub"].append(ref)
                             st.rerun()
                 with bc4:
-                    if st.button("Show", key=f"{cell_uid}_show"):
-                        ref = cell["vector_ref"]
-                        st.session_state.result = {
-                            "expr_str": cell["expr_str"],
-                            "nearest": cell["nearest"],
-                            "vector": saved[ref[1:]]["vector"],
-                        }
+                    if st.button("Remove", key=f"{cell_uid}_remove"):
+                        remove_history_cell(cell)
                         st.rerun()
 
 # ─── Footer ──────────────────────────────────────────────────────────────
