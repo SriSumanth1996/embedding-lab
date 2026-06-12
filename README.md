@@ -65,7 +65,7 @@ or:
 
 and immediately see the closest words returned by the embedding model.
 
-The app uses **GloVe-Wiki-Gigaword-100**, a 100-dimensional pretrained word-vector model, and retrieves nearest neighbors using **cosine similarity**.
+The app uses **GloVe-Wiki-Gigaword-300**, a **300-dimensional** pretrained word-vector model, and retrieves nearest neighbors using **cosine similarity**.
 
 The result is a small but powerful sandbox for understanding how distributional meaning behaves.
 
@@ -109,7 +109,7 @@ pip install streamlit gensim==4.3.3 "numpy<2.0" "scipy<1.14" plotly scikit-learn
 Run the app:
 
 ```bash
-streamlit run app.py
+streamlit run embeddings_intuition.py
 ```
 
 Then open the local URL printed in your terminal and click **Load Model**.
@@ -117,10 +117,12 @@ Then open the local URL printed in your terminal and click **Load Model**.
 On first run, the app downloads:
 
 ```text
-glove-wiki-gigaword-100
+glove-wiki-gigaword-300
 ```
 
-The model is approximately **134 MB** and is cached locally by Gensim. After the first download, future runs load directly from cache.
+The initial download is **moderate in size** and is cached locally by Gensim. After the first download, future runs load directly from cache.
+
+> If you previously loaded a different model in the same Streamlit session, restart the server and click **Load Model** again so the GloVe 300 vectors are actually loaded.
 
 ---
 
@@ -156,6 +158,8 @@ You can remove any term by clicking its chip.
 
 Numbers are not accepted as terms. If a word is not present in the GloVe vocabulary, the app shows a warning and does not add it.
 
+The app also tries common casing variants (`word`, `Word`, `WORD`) when resolving input, so mixed-case typing still works even though GloVe vocabulary is lowercase.
+
 ---
 
 ## 2. Compute
@@ -167,7 +171,7 @@ When you click **Compute**, the app:
 3. sums the added vectors,
 4. subtracts the subtracted vectors,
 5. searches for the nearest words by cosine similarity,
-6. excludes the original input words from the result list.
+6. excludes the original input words from the result list **case-insensitively** (so `king` and `King` are both filtered out).
 
 For example:
 
@@ -181,13 +185,13 @@ is interpreted as:
 (paris - france) + italy
 ```
 
-The app then returns the top semantic neighbors for the resulting vector.
+The app then returns the top **5** semantic neighbors for the resulting vector.
 
 ---
 
 ## 3. Discover
 
-The **Closest Words** panel shows the top 4 nearest words.
+The **Closest Words** panel shows the top **5** nearest words.
 
 Each result includes:
 
@@ -204,6 +208,8 @@ Every neighbor can also become part of a new experiment.
 | **Subtract** | Subtracts the neighbor from the current expression |
 | **Start Fresh** | Clears the expression and starts a new one with that word |
 
+You can also expand **Save this result** to store the computed vector under a custom label (for example `@v1`) and reuse it in later expressions.
+
 This makes exploration feel like semantic browsing: every result can become the next input.
 
 ---
@@ -216,7 +222,8 @@ When a computed neighbor catches your attention, you can:
 
 - add it to the current expression,
 - subtract it from the current expression,
-- or start an entirely new exploration from that word.
+- start an entirely new exploration from that word,
+- or save the computed vector for later reuse.
 
 This creates a natural workflow of discovery:
 
@@ -232,7 +239,7 @@ Rather than running isolated analogies, you can follow semantic trails through t
 
 The app includes a simplified **3D PCA visualization** of the current expression.
 
-Since the original embeddings live in 100 dimensions, the app uses **Principal Component Analysis** to project them into 3 dimensions for visual intuition.
+Since the original embeddings live in **300 dimensions**, the app uses **Principal Component Analysis** to project them into 3 dimensions for visual intuition.
 
 The visualization shows:
 
@@ -246,7 +253,7 @@ Before computing, the chart updates as you add or subtract terms.
 
 After computing, it switches to a result-focused view showing the computed vector and its closest semantic neighbors.
 
-> The 3D plot is an intuition aid. Distances in the PCA projection are not identical to distances in the original 100-dimensional embedding space.
+> The 3D plot is an intuition aid. Distances in the PCA projection are not identical to distances in the original 300-dimensional embedding space.
 
 ---
 
@@ -298,14 +305,17 @@ Embeddings are powerful, but they are also shaped by data.
 
 | Item | Value |
 |---|---|
-| Model | `glove-wiki-gigaword-100` |
-| Embedding dimensions | 100 |
+| Model | `glove-wiki-gigaword-300` |
+| Embedding dimensions | 300 |
 | Vocabulary size | ~400k tokens |
 | Similarity metric | Cosine similarity |
 | Neighbor search | `KeyedVectors.similar_by_vector` |
-| Top neighbors shown | 4 |
+| Top neighbors shown | 5 |
+| Input-term filtering | Case-insensitive exclusion from neighbor results |
+| Input lookup | Casing variants tried before vocabulary check |
 | Visualization | PCA to 3 components |
 | Charting | Plotly `Scatter3d` and 3D arrows |
+| Model loading | Gensim downloader (`gd.load`) |
 | App state | Streamlit session state |
 | Saved vectors | Session-only |
 | Persistence | No database or disk writes for saved vectors |
