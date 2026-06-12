@@ -1,7 +1,7 @@
 """
 Embedding Lab — interactive exploration of word-vector arithmetic.
 
-Streamlit application that uses GloVe-Wiki-Gigaword-100 embeddings and
+Streamlit application that uses Word2Vec Google News 300 embeddings and
 cosine similarity to build additive/subtractive expressions, find nearest
 neighbors, and visualize vectors in a 3D PCA projection.
 
@@ -601,81 +601,36 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] {
 """, unsafe_allow_html=True)
 
 # ─── Constants ─────────────────────────────────────────────────────────────
-TOP_NEIGHBORS = 4
+TOP_NEIGHBORS = 5
 
 # ─── Model loading ─────────────────────────────────────────────────────────
-MODEL_NAME = "glove-wiki-gigaword-100"
+MODEL_NAME = "glove-wiki-gigaword-300"
 
 def is_model_downloaded():
-    """Return True if the GloVe model is present in the gensim data directory."""
+    """Return True if the selected gensim model appears to be present locally."""
     import os
     from gensim import downloader as gd
     return os.path.exists(os.path.join(gd.BASE_DIR, MODEL_NAME))
 
-def download_model_with_progress(progress_bar, status_label):
-    """Download the embedding model and stream progress to Streamlit widgets."""
-    import gensim.downloader as gd
-
-    class _StreamlitDownloadProgress:
-        def __call__(self, chunks_downloaded, chunk_size, total_size, part=1, total_parts=1):
-            if total_size <= 0:
-                return
-            part_frac = min((chunks_downloaded * chunk_size) / total_size, 1.0)
-            overall = ((part - 1) + part_frac) / total_parts
-            progress_bar.progress(overall)
-            downloaded_mb = (chunks_downloaded * chunk_size) / 1e6
-            total_mb = total_size / 1e6
-            part_note = f" · part {part}/{total_parts}" if total_parts > 1 else ""
-            status_label.markdown(
-                f"Downloading … **{downloaded_mb:.0f} / {total_mb:.0f} MB**{part_note}"
-            )
-
-    original_progress = gd._progress
-    gd._progress = _StreamlitDownloadProgress()
-    try:
-        gd._download(MODEL_NAME)
-    finally:
-        gd._progress = original_progress
-    progress_bar.progress(1.0)
-
-def load_vectors_with_progress(load_bar, status_label):
-    """Load word vectors from disk into a gensim KeyedVectors model."""
-    import os
-    from gensim import downloader as gd
-    from gensim import utils
-    from gensim.models import KeyedVectors
-    from gensim.models import keyedvectors as kv_mod
-
-    path = os.path.join(gd.BASE_DIR, MODEL_NAME, f"{MODEL_NAME}.gz")
-    with utils.open(path, "rb") as fin:
-        header = utils.to_unicode(fin.readline(), encoding="utf8")
-        vocab_size, vector_size = [int(x) for x in header.split()]
-        kv = KeyedVectors(vector_size, vocab_size)
-        report_every = max(1, vocab_size // 100)
-
-        for line_no in range(vocab_size):
-            line = fin.readline()
-            if line == b"":
-                raise EOFError("unexpected end of input; is count incorrect or file otherwise damaged?")
-            word, weights = kv_mod._word2vec_line_to_vector(line, kv_mod.REAL, "strict", "utf8")
-            kv_mod._add_word_to_kv(kv, None, word, weights, vocab_size)
-            if line_no % report_every == 0 or line_no == vocab_size - 1:
-                pct = (line_no + 1) / vocab_size
-                load_bar.progress(pct)
-                status_label.markdown(
-                    f"Loading into memory … **{line_no + 1:,} / {vocab_size:,} vectors**"
-                )
-
-    if kv.vectors.shape[0] != len(kv):
-        kv.vectors = kv_mod.ascontiguousarray(kv.vectors[: len(kv)])
-    load_bar.progress(1.0)
-    return kv
 
 def load_model_with_progress(download_bar, load_bar, status_label, show_download):
-    """Download the model when required, then load vectors into memory."""
+    """Load the selected embedding model using gensim downloader.
+    """
+    import gensim.downloader as gd
+
     if show_download:
-        download_model_with_progress(download_bar, status_label)
-    return load_vectors_with_progress(load_bar, status_label)
+        status_label.markdown(
+            f"Downloading and loading **{MODEL_NAME}**. First run may take time."
+        )
+    else:
+        status_label.markdown(f"Loading **{MODEL_NAME}** from local cache.")
+
+    load_bar.progress(0.1)
+    model = gd.load(MODEL_NAME)
+    load_bar.progress(1.0)
+
+    status_label.markdown("**Model ready.**")
+    return model
 
 # ─── Expression helpers ─────────────────────────────────────────────────────
 def is_saved_ref(term):
@@ -708,6 +663,21 @@ def format_expression(add_terms, sub_terms, saved_vectors):
         return inner
     rest = " + ".join(term_label(t, saved_vectors) for t in add_terms[1:])
     return f"{inner} + {rest}"
+
+def normalize_word_for_model(word, model):
+    """Try common casing variants and return the first one present in the model."""
+    candidates = [
+        word,
+        word.lower(),
+        word.title(),
+        word.upper(),
+    ]
+
+    for candidate in candidates:
+        if candidate in model:
+            return candidate
+
+    return word
 
 def resolve_term(term, model, saved_vectors):
     """Resolve a term to its embedding vector, or return an error indicator."""
@@ -747,8 +717,8 @@ def nearest_words_for_vec(vec, model, exclude_words=None, topn=TOP_NEIGHBORS):
     buffer = topn + len(exclude_words or []) + 20
     candidates = model.similar_by_vector(vec, topn=buffer)
     if exclude_words:
-        exclude_set = set(exclude_words)
-        candidates = [(w, s) for w, s in candidates if w not in exclude_set]
+        exclude_set = {w.lower() for w in exclude_words}
+        candidates = [(w, s) for w, s in candidates if w.lower() not in exclude_set]
     return candidates[:topn]
 
 # ─── 3D visualization ──────────────────────────────────────────────────────
@@ -1249,8 +1219,8 @@ if not st.session_state.model_loaded:
       <div style='font-size:12px; letter-spacing:1px; color:#e1e2e8; font-weight:600;
            margin-bottom:8px; text-transform:uppercase;'>Model Required</div>
       <div style='font-size:13px; color:#8b8fa3; line-height:1.6'>
-        This lab uses <strong>GloVe-Wiki-Gigaword-100</strong>.<br>
-        Initial download is ~134 MB. Subsequent runs load from local cache.
+        This lab uses <strong>GloVe-Wiki-Gigaword-300</strong>.<br>
+        Initial download is moderate. Subsequent runs load from local cache.
       </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1295,7 +1265,8 @@ with col_left:
         )
 
         word_input = st.text_input("Term", placeholder="e.g. king", key=f"word_input_{st.session_state.input_key_counter}")
-        word = word_input.strip().lower()
+        raw_word = word_input.strip()
+        word = normalize_word_for_model(raw_word, wv) if raw_word else ""
 
         with st.container(key="term_chips_box"):
             if expr["add"] or expr["sub"]:
@@ -1553,6 +1524,6 @@ if st.session_state.history:
 # ─── Footer ──────────────────────────────────────────────────────────────
 st.markdown(
     '<p style="text-align:center; color:#ffffff; font-size:12px; font-weight:bold; margin-top:32px;">'
-    "GloVe-Wiki-Gigaword-100 • Cosine Similarity • 100 Dimensions</p>",
+    "GloVe-Wiki-Gigaword-300 • Cosine Similarity • 300 Dimensions</p>",
     unsafe_allow_html=True,
 )
